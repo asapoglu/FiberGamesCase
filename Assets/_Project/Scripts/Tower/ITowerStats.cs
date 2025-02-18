@@ -1,6 +1,6 @@
 public interface ITowerStats {
     float AttackRange { get; }
-    float AttackRate { get; }
+    float AttackSpeed { get; }
     float Damage { get; }
     int Health { get; }
 }

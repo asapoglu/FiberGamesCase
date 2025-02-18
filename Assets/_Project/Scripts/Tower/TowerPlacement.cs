@@ -1,71 +1,102 @@
 using UnityEngine;
+using System;
 using Zenject;
 
+[RequireComponent(typeof(ITower))]
 public class TowerPlacement : MonoBehaviour
 {
-    private ITowerPlacementManager _towerPlacementManager;
-    private IGridManager _gridManager;
-    private bool _inPlacementMode = true;
+    private TowerPlacementManager _towerPlacementManager;
+    private GridManager _gridManager;
+    private bool _inPlacementMode = false;
     private GridCell _currentHighlightedCell;
-    
-    [Inject]
-    public void Construct(ITowerPlacementManager towerPlacementManager, IGridManager gridManager)
+    private bool _isValidPlacement = true;
+
+    [Inject]    
+    public void Construct(
+        TowerPlacementManager towerPlacementManager, 
+        GridManager gridManager)
     {
         _towerPlacementManager = towerPlacementManager;
         _gridManager = gridManager;
     }
-    
+
     void Update()
     {
         if (!_inPlacementMode) return;
-        
+
         Vector3 mouseWorldPos = GetMouseWorldPosition();
         GridCell cell = _gridManager.GetCellFromWorldPosition(mouseWorldPos);
-        if (cell != null)
+
+        HandleCellHighlighting(cell);
+        HandlePlacementPreview(cell);
+        HandleInput(cell);
+    }
+
+    private void HandleCellHighlighting(GridCell cell)
+    {
+        if (_currentHighlightedCell != cell)
         {
-            // Tower'ı grid hücresinin merkezine snapler
-            transform.position = cell.transform.position;
-            
-            if (_currentHighlightedCell != cell)
+            if (_currentHighlightedCell != null)
+                _currentHighlightedCell.UnHighlight();
+
+            if (cell != null)
             {
-                if (_currentHighlightedCell != null)
-                    _currentHighlightedCell.UnHighlight();
                 cell.Highlight();
                 _currentHighlightedCell = cell;
             }
-            
-            // Sol mouse tuşu bırakıldığında yerleştirme tamamlanır
-            if (Input.GetMouseButtonUp(0))
-            {
-                _towerPlacementManager.PlaceTower(cell);
-                cell.UnHighlight();
-                _inPlacementMode = false;
-                // Yerleştirme tamamlandıktan sonra bu bileşeni devre dışı bırakabiliriz
-                this.enabled = false;
-            }
         }
-        else
+    }
+
+    private void HandlePlacementPreview(GridCell cell)
+    {
+        if (cell != null)
         {
-            if (_currentHighlightedCell != null)
+            transform.position = cell.transform.position;
+            bool isValid = cell.isAvailable;
+            
+            if (isValid != _isValidPlacement)
             {
-                _currentHighlightedCell.UnHighlight();
-                _currentHighlightedCell = null;
+                _isValidPlacement = isValid;
             }
         }
     }
-    
+
+    private void HandleInput(GridCell cell)
+    {
+        if (Input.GetMouseButtonUp(0) && cell != null && cell.isAvailable)
+        {
+            _towerPlacementManager.PlaceTower(cell);
+            _inPlacementMode = false;
+        }
+        else if (Input.GetMouseButtonUp(1) || Input.GetKeyDown(KeyCode.Escape))
+        {
+            _towerPlacementManager.CancelPlacement();
+            _inPlacementMode = false;
+        }
+    }
+
+
     private Vector3 GetMouseWorldPosition()
     {
         Plane plane = new Plane(Vector3.up, Vector3.zero);
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        
         if (plane.Raycast(ray, out float distance))
             return ray.GetPoint(distance);
+            
         return Vector3.zero;
     }
-    
-    // Dışarıdan yerleştirme modunun durumu ayarlanabilir.
+
     public void SetPlacementMode(bool mode)
     {
         _inPlacementMode = mode;
+    }
+
+    private void OnDestroy()
+    {
+        if (_currentHighlightedCell != null)
+        {
+            _currentHighlightedCell.UnHighlight();
+        }
     }
 }

@@ -1,6 +1,9 @@
 using UnityEngine;
-
-public class GridManager : MonoBehaviour, IGridManager
+/// <summary>
+/// Oyun alanının grid sistemini yöneten sınıf.
+/// Kule yerleştirme için grid hücrelerini oluşturur ve yönetir.
+/// </summary>
+public class GridManager : MonoBehaviour
 {
     public int rows = 10;
     public int columns = 10;
@@ -14,7 +17,10 @@ public class GridManager : MonoBehaviour, IGridManager
         CreateGrid();
         ShowGrid(false); 
     }
-
+    /// <summary>
+    /// Grid sistemini oluşturur.
+    /// Hücreleri yerleştirir ve başlangıç ayarlarını yapar.
+    /// </summary>
     void CreateGrid()
     {
         gridCells = new GridCell[rows, columns];
@@ -40,7 +46,11 @@ public class GridManager : MonoBehaviour, IGridManager
             cell.gameObject.SetActive(visible);
         }
     }
-
+    /// <summary>
+    /// Dünya koordinatlarına karşılık gelen grid hücresini bulur.
+    /// </summary>
+    /// <param name="worldPos">Dünya koordinatları</param>
+    /// <returns>İlgili grid hücresi veya null</returns>
     public GridCell GetCellFromWorldPosition(Vector3 worldPos)
     {
         Vector3 gridOrigin = transform.position - new Vector3((columns - 1) * cellSize / 2f, 0, (rows - 1) * cellSize / 2f);
